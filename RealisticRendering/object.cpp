@@ -178,7 +178,7 @@ int object::read_obj_file(std::string fileName) {
 
             if (res.size() == 0)
                 continue;
-
+            
             if (res[0].size() > 0 && res[0][0] == '#')
                 continue;
 
