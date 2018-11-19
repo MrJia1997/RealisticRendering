@@ -4,8 +4,6 @@
 
 int main(int argc, char *argv[])
 {
-    scene s;
-    s.read_scene_file("scene/Scene_1.scene");
     QApplication a(argc, argv);
     RealisticRendering w;
     w.show();

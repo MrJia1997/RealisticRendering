@@ -41,6 +41,7 @@ bool is_absolute_path(std::string fileName) {
 int scene::read_scene_file(std::string fileName) {
     // octothrope(#) for comment
     // O for obj file name (in double quotes)
+    // S for size restriction
     // T for transformation matrix
     clear_all();
 
@@ -93,8 +94,18 @@ int scene::read_scene_file(std::string fileName) {
                     throw std::length_error("obj file name error");
                 }
             }
+            else if (res[0] == "S") {
+                if (res.size() == 2) {
+                    float size = std::stof(res[1]);
+                    tempObject->normalize(size);
+                }
+                else {
+                    throw std::length_error("size error");
+                }
+            }
             else if (res[0] == "T") {
-                Matrix4f trans = Matrix4f::Identity();
+                QMatrix4x4 trans;
+                trans.setToIdentity();
 
                 for (int i = 0; i < 4; i++) {
                     std::getline(fileIn, buf);

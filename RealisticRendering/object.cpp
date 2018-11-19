@@ -156,6 +156,24 @@ void object::update_boundingbox() {
      
 }
 
+void object::normalize(float size) {
+    float rangeX = xmax - xmin,
+        rangeY = ymax - ymin,
+        rangeZ = zmax - zmin;
+
+    float rangeMax = std::max(rangeX, std::max(rangeY, rangeZ));
+    float scale = size / rangeMax;
+
+    vec3f center;
+    center.x = (xmax + xmin) / 2.f;
+    center.y = (ymax + ymin) / 2.f;
+    center.z = (zmax + zmin) / 2.f;
+
+    for (auto v : vertices) {
+        v->position = (v->position - center) * scale;
+    }
+}
+
 int object::read_obj_file(std::string fileName) {
     // TODO: support g
     // TODO: support usemtl

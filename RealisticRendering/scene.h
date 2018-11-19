@@ -2,14 +2,12 @@
 #include "object.h"
 #include <vector>
 #include <map>
-#include <Eigen/Dense>
-
-typedef Eigen::Matrix4f Matrix4f;
+#include <QMatrix4x4>
 
 class scene {
 public:
     std::vector<object*> objects;
-    std::map<object*, Matrix4f> transMatrices;
+    std::map<object*, QMatrix4x4> transMatrices;
     
 public:
     scene() {}

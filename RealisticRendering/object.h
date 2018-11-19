@@ -25,12 +25,13 @@ public:
     int         degree;
 
 public:
-    vertex(const vec3f& p) :
+    vertex(const vec3f& p = vec3f(0.f, 0.f, 0.f), 
+        const vec4f& c = vec4f(1.f, 1.f, 1.f, 1.f)) :
         id(-1),
         position(p),
         pEdge(nullptr),
         degree(0),
-        color(1.f, 1.f, 1.f, 1.f) {}
+        color(c) {}
     ~vertex() {}
 
 public:
@@ -41,7 +42,7 @@ public:
     vec4f&  get_color() { return color; }
     int     get_degree() { return degree; }
 
-    void set_id(const int i) { id = id; }
+    void set_id(const int i) { id = i; }
     void set_position(const vec3f& p) { position = p; }
     //void set_normal(const vec3f& n) { normal = n; }
     void set_color(const vec4f& c) { color = c; }
@@ -129,6 +130,7 @@ public:
     face*       insert_face(std::vector<vertex*>& vs);
 
     void update_boundingbox();
+    void normalize(float size);
 
     int read_obj_file(std::string fileName);
 
