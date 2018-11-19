@@ -17,6 +17,11 @@
 
 class QOpenGLShaderProgram;
 
+enum {
+    ORTHOGRAPHIC,
+    PERSPECTIVE
+};
+
 class RenderingWidget : public QOpenGLWidget, 
     protected QOpenGLFunctions {
 
@@ -42,6 +47,9 @@ protected:
 protected slots:
     void update();
 
+public slots:
+    void set_proj_type(int type);
+
 private:
     scene *pScene;
 
@@ -52,6 +60,9 @@ private:
     int uModelToWorld;
     int uWorldToCamera;
     int uCameraToView;
+
+    int projType;
+    float orthoRange;
 
     QMatrix4x4 mProjection;
     Camera3D mCamera;

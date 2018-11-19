@@ -46,7 +46,14 @@ static const std::vector<vertex> vs({
 #undef VERTEX_FTR
 
 RenderingWidget::RenderingWidget(QWidget *parent) 
-    : QOpenGLWidget(parent), pScene(nullptr) {
+    : QOpenGLWidget(parent), 
+    pScene(nullptr),
+    mProgram(nullptr),
+    uModelToWorld(-1), 
+    uWorldToCamera(-1), 
+    uCameraToView(-1),
+    projType(PERSPECTIVE),
+    orthoRange(1.5f) {
     this->grabKeyboard();
 
     mTransform.translate(0.0f, 0.0f, -5.0f);
@@ -71,7 +78,7 @@ void RenderingWidget::initializeGL() {
     
     glClearColor(0.5, 0.5, 0.5, 0.0);
     glEnable(GL_CULL_FACE);
-    /*glShadeModel(GL_SMOOTH);
+    glShadeModel(GL_SMOOTH);
     glEnable(GL_DOUBLEBUFFER);
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
@@ -79,8 +86,8 @@ void RenderingWidget::initializeGL() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-    glEnable(GL_DEPTH_TEST);
-    glClearDepth(1);*/
+    //glEnable(GL_DEPTH_TEST);
+    //glClearDepth(1);
 
 
     {
@@ -119,7 +126,16 @@ void RenderingWidget::initializeGL() {
 
 void RenderingWidget::resizeGL(int w, int h) {
     mProjection.setToIdentity();
-    mProjection.perspective(45.0f, w / static_cast<float>(h), 0.0f, 1000.0f);
+    float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    if (projType == PERSPECTIVE)
+        mProjection.perspective(45.0f, aspectRatio, 0.0f, 1000.0f);
+    else if (projType == ORTHOGRAPHIC)
+        mProjection.ortho(
+            -orthoRange * aspectRatio, 
+            orthoRange * aspectRatio, 
+            -orthoRange, 
+            orthoRange, 
+            0.0f, 1000.0f);
 }
 
 void RenderingWidget::paintGL() {
@@ -178,15 +194,15 @@ void RenderingWidget::update() {
     }
     if (Input::keyPressed(Qt::Key_Q))
     {
-        translation -= mCamera.forward();
+        translation += mCamera.forward();
     }
     if (Input::keyPressed(Qt::Key_E))
     {
-        translation += mCamera.forward();
+        translation -= mCamera.forward();
     }
     mCamera.translate(transSpeed * translation);
 
-    mTransform.rotate(1.0f, QVector3D(0.4f, 0.3f, 0.3f));
+    //mTransform.rotate(1.0f, QVector3D(0.4f, 0.3f, 0.3f));
 
     QOpenGLWidget::update();
 }
@@ -217,4 +233,10 @@ void RenderingWidget::mousePressEvent(QMouseEvent *event) {
 
 void RenderingWidget::mouseReleaseEvent(QMouseEvent *event) {
     Input::registerMouseRelease(event->button());
+}
+
+void RenderingWidget::set_proj_type(int type) {
+    projType = type;
+    int w = this->width(), h = this->height();
+    resizeGL(w, h);
 }

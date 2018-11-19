@@ -19,9 +19,16 @@ void RealisticRendering::createRenderArea() {
 
 void RealisticRendering::initOptions() {
     ui.phong->setChecked(true);
-    ui.orthographic->setChecked(true);
+    ui.perspective->setChecked(true);
 
-    // connect signals
+    //TODO: connect signals
+    connect(ui.perspective, &QRadioButton::clicked, this, [&]() {
+        render.set_proj_type(PERSPECTIVE);
+    });
+    connect(ui.orthographic, &QRadioButton::clicked, this, [&]() {
+        render.set_proj_type(ORTHOGRAPHIC);
+    });
+
 }
 
 void RealisticRendering::initActions() {
