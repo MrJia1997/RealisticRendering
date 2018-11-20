@@ -2,61 +2,73 @@
 #include "input.h"
 
 // Front Verticies
-#define VERTEX_FTR vertex( vec3f( 0.5f,  0.5f,  0.5f), vec4f( 1.0f, 0.0f, 0.0f, 1.0f ) )
-#define VERTEX_FTL vertex( vec3f(-0.5f,  0.5f,  0.5f), vec4f( 0.0f, 1.0f, 0.0f, 1.0f ) )
-#define VERTEX_FBL vertex( vec3f(-0.5f, -0.5f,  0.5f), vec4f( 0.0f, 0.0f, 1.0f, 1.0f ) )
-#define VERTEX_FBR vertex( vec3f( 0.5f, -0.5f,  0.5f), vec4f( 0.0f, 0.0f, 0.0f, 1.0f ) )
+#define VERTEX_FTR_F vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
+#define VERTEX_FTR_T vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
+#define VERTEX_FTR_R vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
+#define VERTEX_FTL_F vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
+#define VERTEX_FTL_T vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
+#define VERTEX_FTL_L vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
+#define VERTEX_FBL_F vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
+#define VERTEX_FBL_B vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
+#define VERTEX_FBL_L vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
+#define VERTEX_FBR_F vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
+#define VERTEX_FBR_B vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
+#define VERTEX_FBR_R vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
 
 // Back Verticies
-#define VERTEX_BTR vertex( vec3f( 0.5f,  0.5f, -0.5f), vec4f( 1.0f, 1.0f, 0.0f, 1.0f ) )
-#define VERTEX_BTL vertex( vec3f(-0.5f,  0.5f, -0.5f), vec4f( 0.0f, 1.0f, 1.0f, 1.0f ) )
-#define VERTEX_BBL vertex( vec3f(-0.5f, -0.5f, -0.5f), vec4f( 1.0f, 0.0f, 1.0f, 1.0f ) )
-#define VERTEX_BBR vertex( vec3f( 0.5f, -0.5f, -0.5f), vec4f( 1.0f, 1.0f, 1.0f, 1.0f ) )
+#define VERTEX_BTR_B vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
+#define VERTEX_BTR_T vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
+#define VERTEX_BTR_R vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
+#define VERTEX_BTL_B vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
+#define VERTEX_BTL_T vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
+#define VERTEX_BTL_L vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
+#define VERTEX_BBL_BA vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
+#define VERTEX_BBL_BO vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
+#define VERTEX_BBL_L vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
+#define VERTEX_BBR_BA vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
+#define VERTEX_BBR_BO vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
+#define VERTEX_BBR_R vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
+
 
 // Create a colored cube
 static const std::vector<vertex> vs({
     // Face 1 (Front)
-    VERTEX_FTR, VERTEX_FTL, VERTEX_FBL,
-    VERTEX_FBL, VERTEX_FBR, VERTEX_FTR,
+    VERTEX_FTR_F, VERTEX_FTL_F, VERTEX_FBL_F,
+    VERTEX_FBL_F, VERTEX_FBR_F, VERTEX_FTR_F,
     // Face 2 (Back)
-    VERTEX_BBR, VERTEX_BTL, VERTEX_BTR,
-    VERTEX_BTL, VERTEX_BBR, VERTEX_BBL,
+    VERTEX_BBR_BA, VERTEX_BTL_B, VERTEX_BTR_B,
+    VERTEX_BTL_B, VERTEX_BBR_BA, VERTEX_BBL_BA,
     // Face 3 (Top)
-    VERTEX_FTR, VERTEX_BTR, VERTEX_BTL,
-    VERTEX_BTL, VERTEX_FTL, VERTEX_FTR,
+    VERTEX_FTR_T, VERTEX_BTR_T, VERTEX_BTL_T,
+    VERTEX_BTL_T, VERTEX_FTL_T, VERTEX_FTR_T,
     // Face 4 (Bottom)
-    VERTEX_FBR, VERTEX_FBL, VERTEX_BBL,
-    VERTEX_BBL, VERTEX_BBR, VERTEX_FBR,
+    VERTEX_FBR_B, VERTEX_FBL_B, VERTEX_BBL_BO,
+    VERTEX_BBL_BO, VERTEX_BBR_BO, VERTEX_FBR_B,
     // Face 5 (Left)
-    VERTEX_FBL, VERTEX_FTL, VERTEX_BTL,
-    VERTEX_FBL, VERTEX_BTL, VERTEX_BBL,
+    VERTEX_FBL_L, VERTEX_FTL_L, VERTEX_BTL_L,
+    VERTEX_FBL_L, VERTEX_BTL_L, VERTEX_BBL_L,
     // Face 6 (Right)
-    VERTEX_FTR, VERTEX_FBR, VERTEX_BBR,
-    VERTEX_BBR, VERTEX_BTR, VERTEX_FTR
+    VERTEX_FTR_R, VERTEX_FBR_R, VERTEX_BBR_R,
+    VERTEX_BBR_R, VERTEX_BTR_R, VERTEX_FTR_R
 });
 
-#undef VERTEX_BBR
-#undef VERTEX_BBL
-#undef VERTEX_BTL
-#undef VERTEX_BTR
-
-#undef VERTEX_FBR
-#undef VERTEX_FBL
-#undef VERTEX_FTL
-#undef VERTEX_FTR
+static const std::vector<vertex> vs2({
+    // Face 1 (Front)
+    VERTEX_FTR_F, VERTEX_FTL_F, VERTEX_FBL_F,
+    VERTEX_FBL_F, VERTEX_FBR_F, VERTEX_FTR_F,
+});
 
 RenderingWidget::RenderingWidget(QWidget *parent) 
     : QOpenGLWidget(parent), 
     pScene(nullptr),
     mProgram(nullptr),
-    uModelToWorld(-1), 
-    uWorldToCamera(-1), 
-    uCameraToView(-1),
     projType(PERSPECTIVE),
-    orthoRange(1.5f) {
+    orthoRange(1.5f),
+    drawArraySize(0) {
+    
     this->grabKeyboard();
 
-    mTransform.translate(0.0f, 0.0f, -5.0f);
+    mCamera.translate(0.0f, 0.0f, 5.0f);
 }
 
 RenderingWidget::~RenderingWidget() {
@@ -70,6 +82,26 @@ void RenderingWidget::read_scene_file(QString fileName) {
 
     pScene = new scene;
     pScene->read_scene_file(fileName.toStdString());
+
+    rawData.clear();
+    for (auto o : pScene->objects) {
+        std::vector<vertex> data = o->raw_data();
+        rawData.insert(rawData.end(), data.begin(), data.end());
+    }
+
+    if (rawData.empty())
+        return;
+
+    // Update Buffer
+    mVertex.bind();
+    mVertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    mVertex.allocate(&rawData[0], rawData.size() * sizeof(vertex));
+    drawArraySize = rawData.size();
+    mObject.bind();
+
+    // Release all
+    mObject.release();
+    mVertex.release();
 }
 
 void RenderingWidget::initializeGL() {
@@ -89,39 +121,21 @@ void RenderingWidget::initializeGL() {
     //glEnable(GL_DEPTH_TEST);
     //glClearDepth(1);
 
+    setupShaderProgram("shaders/phong.vert", "shaders/phong.frag");
+    setupBuffer();
+    setupVAO();
+    
+    mProgram->setAttributeBuffer(0, GL_FLOAT, offsetof(vertex, position), 3, sizeof(vertex));
+    mProgram->setAttributeBuffer(1, GL_FLOAT, offsetof(vertex, normal), 3, sizeof(vertex));
+    mProgram->setAttributeBuffer(2, GL_FLOAT, offsetof(vertex, color), 4, sizeof(vertex));
+    mProgram->enableAttributeArray(0);
+    mProgram->enableAttributeArray(1);
+    mProgram->enableAttributeArray(2);
 
-    {
-        // Create Shader (Do not release until VAO is created)
-        mProgram = new QOpenGLShaderProgram();
-        mProgram->addShaderFromSourceFile(QOpenGLShader::Vertex, "shaders/simple.vert");
-        mProgram->addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/simple.frag");
-        mProgram->link();
-        mProgram->bind();
-
-        // Cache Uniform Locations
-        uModelToWorld = mProgram->uniformLocation("modelToWorld");
-        uWorldToCamera = mProgram->uniformLocation("worldToCamera");
-        uCameraToView = mProgram->uniformLocation("cameraToView");
-
-        // Create Buffer (Do not release until VAO is created)
-        mVertex.create();
-        mVertex.bind();
-        mVertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
-        mVertex.allocate(&vs[0], vs.size() * sizeof(vertex));
-
-        // Create Vertex Array Object
-        mObject.create();
-        mObject.bind();
-        mProgram->setAttributeBuffer(0, GL_FLOAT, offsetof(vertex, position), 3, sizeof(vertex));
-        mProgram->setAttributeBuffer(1, GL_FLOAT, offsetof(vertex, color),  4, sizeof(vertex));
-        mProgram->enableAttributeArray(0);
-        mProgram->enableAttributeArray(1);
-
-        // Release (unbind) all
-        mObject.release();
-        mVertex.release();
-        mProgram->release();
-    }
+    // Release (unbind) all
+    mObject.release();
+    mVertex.release();
+    mProgram->release();
 }
 
 void RenderingWidget::resizeGL(int w, int h) {
@@ -142,12 +156,25 @@ void RenderingWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     mProgram->bind();
-    mProgram->setUniformValue(uWorldToCamera, mCamera.toMatrix());
-    mProgram->setUniformValue(uCameraToView, mProjection);
+
+    mProgram->setUniformValue("viewMat", mCamera.toMatrix());
+    mProgram->setUniformValue("projection", mProjection);
+    mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
+     
+    QVector4D worldLight(5.0f, 5.0f, 2.0f, 1.0f);
+    mProgram->setUniformValue("material.Kd", 0.9f, 0.5f, 0.3f);
+    mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
+    mProgram->setUniformValue("light.Position", mCamera.toMatrix() * worldLight);
+    mProgram->setUniformValue("material.Ka", 0.9f, 0.5f, 0.3f);
+    mProgram->setUniformValue("light.La", 0.4f, 0.4f, 0.4f);
+    mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
+    mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
+    mProgram->setUniformValue("material.Shininess", 100.0f);
+
     {
         mObject.bind();
-        mProgram->setUniformValue(uModelToWorld, mTransform.toMatrix());
-        glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(vs.size()));
+        mProgram->setUniformValue("modelMat", mTransform.toMatrix());
+        glDrawArrays(GL_TRIANGLES, 0, drawArraySize);
         mObject.release();
     }
     mProgram->release();
@@ -156,8 +183,32 @@ void RenderingWidget::paintGL() {
 void RenderingWidget::teardownGL() {
     mObject.destroy();
     mVertex.destroy();
-    delete mProgram;
+    if (mProgram != nullptr)
+        delete mProgram;
 }
+
+void RenderingWidget::setupShaderProgram(const char *vertFile, const char *fragFile) {
+    // Create Shader (Do not release until VAO is created)
+    mProgram = new QOpenGLShaderProgram();
+    mProgram->addShaderFromSourceFile(QOpenGLShader::Vertex, vertFile);
+    mProgram->addShaderFromSourceFile(QOpenGLShader::Fragment, fragFile);
+    mProgram->link();
+    
+}
+
+void RenderingWidget::setupBuffer() {
+    // Create Buffer (Do not release until VAO is created)
+    mVertex.create();
+    mVertex.bind();
+    mVertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
+}
+
+void RenderingWidget::setupVAO() {
+    // Create Vertex Array Object
+    mObject.create();
+    mObject.bind();
+}
+
 
 void RenderingWidget::update() {
     // Update input

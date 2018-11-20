@@ -38,6 +38,10 @@ protected:
     void resizeGL(int w, int h);
     void paintGL();
     void teardownGL();
+    
+    void setupShaderProgram(const char *vertFile, const char *fragFile);
+    void setupBuffer();
+    void setupVAO();
 
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
@@ -52,14 +56,12 @@ public slots:
 
 private:
     scene *pScene;
+    std::vector<vertex> rawData;
+    int drawArraySize;
 
     QOpenGLBuffer mVertex;
     QOpenGLVertexArrayObject mObject;
     QOpenGLShaderProgram *mProgram;
-
-    int uModelToWorld;
-    int uWorldToCamera;
-    int uCameraToView;
 
     int projType;
     float orthoRange;

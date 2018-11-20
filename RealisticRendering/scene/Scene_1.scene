@@ -1,4 +1,4 @@
-O "Cat head.obj"
+O "Eight.obj"
 S 2.0
 T
 1 0 0 0
@@ -12,7 +12,7 @@ T
 #0 1 0 0
 #0 0 1 0
 #0 0 0 1
-#O "Eight.obj"
+#O "Cat Head.obj"
 #S 2.0
 #T
 #1 0 0 0

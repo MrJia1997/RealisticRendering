@@ -19,16 +19,19 @@ class vertex {
 public:
     int         id;
     point       position;
+    vec3f       normal;
     vec3f       texCoord;
     vec4f       color;
     half_edge   *pEdge;
     int         degree;
 
 public:
-    vertex(const vec3f& p = vec3f(0.f, 0.f, 0.f), 
+    vertex(const vec3f& p = vec3f(0.f, 0.f, 0.f),
+        const vec3f& n = vec3f(0.f, 0.f, 0.f),
         const vec4f& c = vec4f(1.f, 1.f, 1.f, 1.f)) :
         id(-1),
         position(p),
+        normal(n),
         pEdge(nullptr),
         degree(0),
         color(c) {}
@@ -37,14 +40,14 @@ public:
 public:
     int     get_id() { return id;}
     vec3f&  get_position() { return position; }
-    //vec3f&  get_normal() { return normal; }
+    vec3f&  get_normal() { return normal; }
     vec3f&  get_texCoord() { return texCoord; }
     vec4f&  get_color() { return color; }
     int     get_degree() { return degree; }
 
     void set_id(const int i) { id = i; }
     void set_position(const vec3f& p) { position = p; }
-    //void set_normal(const vec3f& n) { normal = n; }
+    void set_normal(const vec3f& n) { normal = n; }
     void set_color(const vec4f& c) { color = c; }
 
 };
@@ -133,6 +136,8 @@ public:
     void normalize(float size);
 
     int read_obj_file(std::string fileName);
+
+    std::vector<vertex> raw_data();
 
 private:
     void clear_vertices();

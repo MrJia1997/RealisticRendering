@@ -139,8 +139,8 @@ face* object::insert_face(std::vector<vertex*>& vs) {
 }
 
 void object::update_boundingbox() {
-#define COOR_MIN static_cast<float>(1e10)
-#define COOR_MAX static_cast<float>(-1e10)
+#define COOR_MIN static_cast<float>(-1e10)
+#define COOR_MAX static_cast<float>(1e10)
      
     xmax = ymax = zmax = COOR_MIN;
     xmin = ymin = zmin = COOR_MAX;
@@ -298,4 +298,20 @@ int object::read_obj_file(std::string fileName) {
 
     return 0;
 }
+
+std::vector<vertex> object::raw_data()
+{
+    std::vector<vertex> data;
+    for (auto f : faces) {
+        half_edge* start = f->pEdge, *p = start;
+        do {
+            vertex v = *p->pVertex;
+            v.set_normal(p->normal);
+            data.push_back(v);
+            p = p->pNext;
+        } while (p != start);
+    }
+    return data;
+}
+
 
