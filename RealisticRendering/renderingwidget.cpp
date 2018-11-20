@@ -1,63 +1,6 @@
 #include "renderingwidget.h"
 #include "input.h"
 
-// Front Verticies
-#define VERTEX_FTR_F vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
-#define VERTEX_FTR_T vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
-#define VERTEX_FTR_R vertex( vec3f( 0.5f,  0.5f,  0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
-#define VERTEX_FTL_F vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
-#define VERTEX_FTL_T vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
-#define VERTEX_FTL_L vertex( vec3f(-0.5f,  0.5f,  0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
-#define VERTEX_FBL_F vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
-#define VERTEX_FBL_B vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
-#define VERTEX_FBL_L vertex( vec3f(-0.5f, -0.5f,  0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
-#define VERTEX_FBR_F vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 0.0f, 0.0f, 1.0f) )
-#define VERTEX_FBR_B vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
-#define VERTEX_FBR_R vertex( vec3f( 0.5f, -0.5f,  0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
-
-// Back Verticies
-#define VERTEX_BTR_B vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
-#define VERTEX_BTR_T vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
-#define VERTEX_BTR_R vertex( vec3f( 0.5f,  0.5f, -0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
-#define VERTEX_BTL_B vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
-#define VERTEX_BTL_T vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f( 0.0f, 1.0f, 0.0f) )
-#define VERTEX_BTL_L vertex( vec3f(-0.5f,  0.5f, -0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
-#define VERTEX_BBL_BA vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
-#define VERTEX_BBL_BO vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
-#define VERTEX_BBL_L vertex( vec3f(-0.5f, -0.5f, -0.5f), vec3f(-1.0f, 0.0f, 0.0f) )
-#define VERTEX_BBR_BA vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 0.0f, 0.0f,-1.0f) )
-#define VERTEX_BBR_BO vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 0.0f,-1.0f, 0.0f) )
-#define VERTEX_BBR_R vertex( vec3f( 0.5f, -0.5f, -0.5f), vec3f( 1.0f, 0.0f, 0.0f) )
-
-
-// Create a colored cube
-static const std::vector<vertex> vs({
-    // Face 1 (Front)
-    VERTEX_FTR_F, VERTEX_FTL_F, VERTEX_FBL_F,
-    VERTEX_FBL_F, VERTEX_FBR_F, VERTEX_FTR_F,
-    // Face 2 (Back)
-    VERTEX_BBR_BA, VERTEX_BTL_B, VERTEX_BTR_B,
-    VERTEX_BTL_B, VERTEX_BBR_BA, VERTEX_BBL_BA,
-    // Face 3 (Top)
-    VERTEX_FTR_T, VERTEX_BTR_T, VERTEX_BTL_T,
-    VERTEX_BTL_T, VERTEX_FTL_T, VERTEX_FTR_T,
-    // Face 4 (Bottom)
-    VERTEX_FBR_B, VERTEX_FBL_B, VERTEX_BBL_BO,
-    VERTEX_BBL_BO, VERTEX_BBR_BO, VERTEX_FBR_B,
-    // Face 5 (Left)
-    VERTEX_FBL_L, VERTEX_FTL_L, VERTEX_BTL_L,
-    VERTEX_FBL_L, VERTEX_BTL_L, VERTEX_BBL_L,
-    // Face 6 (Right)
-    VERTEX_FTR_R, VERTEX_FBR_R, VERTEX_BBR_R,
-    VERTEX_BBR_R, VERTEX_BTR_R, VERTEX_FTR_R
-});
-
-static const std::vector<vertex> vs2({
-    // Face 1 (Front)
-    VERTEX_FTR_F, VERTEX_FTL_F, VERTEX_FBL_F,
-    VERTEX_FBL_F, VERTEX_FBR_F, VERTEX_FTR_F,
-});
-
 RenderingWidget::RenderingWidget(QWidget *parent) 
     : QOpenGLWidget(parent), 
     pScene(nullptr),
@@ -110,7 +53,10 @@ void RenderingWidget::initializeGL() {
     
     glClearColor(0.5, 0.5, 0.5, 0.0);
     glEnable(GL_CULL_FACE);
-    glShadeModel(GL_SMOOTH);
+    
+    glClearDepth(1);
+    glEnable(GL_DEPTH_TEST);
+    
     glEnable(GL_DOUBLEBUFFER);
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
@@ -118,9 +64,7 @@ void RenderingWidget::initializeGL() {
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-    //glEnable(GL_DEPTH_TEST);
-    //glClearDepth(1);
-
+    
     setupShaderProgram("shaders/phong.vert", "shaders/phong.frag");
     setupBuffer();
     setupVAO();
@@ -142,7 +86,7 @@ void RenderingWidget::resizeGL(int w, int h) {
     mProjection.setToIdentity();
     float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
     if (projType == PERSPECTIVE)
-        mProjection.perspective(45.0f, aspectRatio, 0.0f, 1000.0f);
+        mProjection.perspective(45.0f, aspectRatio, 0.1f, 1000.0f);
     else if (projType == ORTHOGRAPHIC)
         mProjection.ortho(
             -orthoRange * aspectRatio, 
@@ -153,7 +97,8 @@ void RenderingWidget::resizeGL(int w, int h) {
 }
 
 void RenderingWidget::paintGL() {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glShadeModel(GL_SMOOTH);
 
     mProgram->bind();
 

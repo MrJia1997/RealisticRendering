@@ -1,6 +1,3 @@
 <RCC>
-    <qresource prefix="/RealisticRendering">
-        <file>shaders/simple.frag</file>
-        <file>shaders/simple.vert</file>
-    </qresource>
+    <qresource prefix="/RealisticRendering"/>
 </RCC>

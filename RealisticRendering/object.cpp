@@ -156,7 +156,69 @@ void object::update_boundingbox() {
      
 }
 
+void object::update_normal() {
+    // update face normal
+    for (auto f : faces) {
+        half_edge *he1 = f->pEdge;
+        half_edge *he2 = f->pEdge->pNext;
+
+        vertex *v1 = he1->pVertex;
+        vertex *v2 = he2->pVertex;
+        vertex *v3 = he2->pNext->pVertex;
+
+        vec3f v2v1, v2v3;
+        v2v1 = v1->position - v2->position;
+        v2v3 = v3->position - v2->position;
+
+        f->normal = v2v3 % v2v1;	
+    }
+
+    // update vertex normal
+    for (auto v : vertices) {
+        if (v->degree < 2) {
+            // ERROR: the degree of the vertex is less than 2
+            v->normal = vec3f(1.f, 0.f, 0.f);
+            return;
+        }
+
+        if (v->id == 149)
+            int a = 0;
+
+        half_edge *edge = v->pEdge;
+        if (edge == nullptr || edge->pPrev == nullptr || edge->pNext == nullptr) {
+            // ERROR: the edge attached to the vertex is NULL
+            v->normal = vec3f(1.f, 0.f, 0.f);
+            return;
+        }
+
+        v->normal = vec3f(0.f, 0.f, 0.f);
+        int iterNum = 0;
+        do {
+            iterNum++;
+            if (iterNum > v->degree) {
+                qDebug() << "    iterNum > v->degree : " << v->id << "\n";
+                break;
+            }
+
+            vertex* v1 = edge->pPrev->pVertex;
+            vertex* v2 = edge->pVertex;
+            vertex* v3 = edge->pNext->pVertex;
+            
+            vec3f v2v1, v2v3;
+            v2v1 = v1->position - v2->position;
+            v2v3 = v3->position - v2->position;
+            
+            vec3f norm = v2v3 % v2v1;
+
+            v->normal = v->normal + norm;
+            edge = edge->pOppo->pNext;
+        } while (edge != v->pEdge && edge != nullptr);
+
+    }
+}
+
 void object::normalize(float size) {
+    update_boundingbox();
     float rangeX = xmax - xmin,
         rangeY = ymax - ymin,
         rangeZ = zmax - zmin;
@@ -294,7 +356,7 @@ int object::read_obj_file(std::string fileName) {
     }
 
     update_boundingbox();
-    // TODO: update normal
+    update_normal();
 
     return 0;
 }
@@ -304,9 +366,15 @@ std::vector<vertex> object::raw_data()
     std::vector<vertex> data;
     for (auto f : faces) {
         half_edge* start = f->pEdge, *p = start;
+        int iterNum = 0;
         do {
+            iterNum++;
+            if (iterNum > f->valence) {
+                qDebug() << "    iterNum > f->valence : " << f->id << "\n";
+                break;
+            }
+            
             vertex v = *p->pVertex;
-            v.set_normal(p->normal);
             data.push_back(v);
             p = p->pNext;
         } while (p != start);

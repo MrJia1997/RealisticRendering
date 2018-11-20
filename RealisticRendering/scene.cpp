@@ -130,5 +130,15 @@ int scene::read_scene_file(std::string fileName) {
         return -1;
     }
 
+    for (auto o : objects) {
+        QMatrix4x4 trans = transMatrices[o];
+        std::vector<vertex*> vertices = o->get_vertices();
+        for (auto v : vertices) {
+            QVector4D coor(v->position.x, v->position.y, v->position.z, 1.0);
+            QVector4D afterTrans = trans * coor;
+            v->position = vec3f(afterTrans.x(), afterTrans.y(), afterTrans.z());
+        }
+    }
+
     return 0;
 }

@@ -133,6 +133,7 @@ public:
     face*       insert_face(std::vector<vertex*>& vs);
 
     void update_boundingbox();
+    void update_normal();
     void normalize(float size);
 
     int read_obj_file(std::string fileName);
