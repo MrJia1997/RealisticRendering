@@ -33,7 +33,7 @@ void RealisticRendering::initOptions() {
             tr("Open texture file"),
             QDir::homePath(),
             tr("Image File (*.jpg *.png *.bmp)"));
-        //render.load_2D_texture(fileName);
+        render.load_texture(fileName);
     });
 }
 

@@ -326,16 +326,14 @@ int object::read_obj_file(std::string fileName) {
                     if (static_cast<int>(vs.size()) >= 3) {
                         face *f = insert_face(vs);
                         int valence = f->get_valence();
-                        half_edge *p = f->pEdge;
                         for (int i = 0; i < valence; i++) {
                             if (vts[i] != -1) {
-                                p->texCoord = tempTexCoord[vts[i]];
-                                p->pVertex->texCoord = tempTexCoord[vts[i]];
+                                vs[i]->texCoord = tempTexCoord[vts[i]];
+                                vs[i]->pEdge->texCoord = tempTexCoord[vts[i]];
                             }
                             if (vns[i] != -1) {
-                                p->normal = tempNormal[vns[i]];
+                                vs[i]->normal = tempNormal[vns[i]];
                             }
-                            p = p->pNext;
                         }
                     }
                     else {

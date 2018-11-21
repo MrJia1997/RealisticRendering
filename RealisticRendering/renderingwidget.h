@@ -54,7 +54,8 @@ protected slots:
 
 public slots:
     void set_proj_type(int type);
-    void load_texture();
+    void load_texture(QString fileName);
+    void load_displacement(QString fileName);
 
 private:
     scene *pScene;

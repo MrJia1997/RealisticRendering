@@ -84,7 +84,8 @@ void RenderingWidget::initializeGL() {
     mProgram->enableAttributeArray(2);
 
     // Load Texture
-    load_texture();
+    load_texture("texture/marble.jpg");
+    load_displacement("texture/rock/Rock_DISPLACEMENT.png");
 
     // Release (unbind) all
     mObject.release();
@@ -119,12 +120,12 @@ void RenderingWidget::paintGL() {
     mProgram->setUniformValue("projection", mProjection);
     mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
      
-    QVector4D worldLight(0.0f, 5.0f, 2.0f, 1.0f);
+    QVector4D worldLight(0.0f, 3.0f, 0.0f, 1.0f);
     mProgram->setUniformValue("material.Kd", 0.5f, 0.5f, 0.5f);
     mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
     mProgram->setUniformValue("light.Position", mCamera.toMatrix() * worldLight);
     mProgram->setUniformValue("material.Ka", 0.5f, 0.5f, 0.5f);
-    mProgram->setUniformValue("light.La", 0.4f, 0.4f, 0.4f);
+    mProgram->setUniformValue("light.La", 0.7f, 0.7f, 0.7f);
     mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
     mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
     mProgram->setUniformValue("material.Shininess", 60.0f);
@@ -169,21 +170,23 @@ void RenderingWidget::setupVAO() {
     mObject.bind();
 }
 
-void RenderingWidget::load_texture() {
+void RenderingWidget::load_texture(QString fileName) {
     if (mTexture != nullptr)
         delete mTexture;
 
-    if (mDisplacement != nullptr)
-        delete mDisplacement;
-
-    mTexture = new QOpenGLTexture(QImage("texture/rock/Rock_COLOR.jpg").mirrored());
+    mTexture = new QOpenGLTexture(QImage(fileName).mirrored());
     mTexture->setMinificationFilter(QOpenGLTexture::Linear);
     mTexture->setMagnificationFilter(QOpenGLTexture::Linear);
     mTexture->setWrapMode(QOpenGLTexture::Repeat);
     glActiveTexture(GL_TEXTURE0);
-    mProgram->setUniformValue("texUnit", 0);
+    mProgram->setUniformValue("texUnit", 0);    
+}
 
-    mDisplacement = new QOpenGLTexture(QImage("texture/rock/Rock_DISPLACEMENT.png").mirrored());
+void RenderingWidget::load_displacement(QString fileName) {
+    if (mDisplacement != nullptr)
+        delete mDisplacement;
+
+    mDisplacement = new QOpenGLTexture(QImage(fileName).mirrored());
     mDisplacement->setMinificationFilter(QOpenGLTexture::Linear);
     mDisplacement->setMagnificationFilter(QOpenGLTexture::Linear);
     mDisplacement->setWrapMode(QOpenGLTexture::Repeat);
