@@ -29,6 +29,8 @@ Trent Reed's Tutorial of Qt5 w/ OpenGL: http://www.trentreed.net/topics/opengl/
 
 懂deeee珍惜's Tutorial of Qt5 w/ OpenGL:https://blog.csdn.net/chaojiwudixiaofeixia?t=1
 
-CGAL: https://www.cgal.org/
+CGAL 4.12: https://www.cgal.org/
+
+
 
  

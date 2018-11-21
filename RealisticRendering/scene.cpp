@@ -3,6 +3,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+
 scene::~scene() {
     clear_all();
 }
@@ -13,7 +16,13 @@ void scene::clear_all() {
             delete o;
         }
     }
+    for (auto t : aabbTrees) {
+        if (t != nullptr) {
+            delete t;
+        }
+    }
     objects.clear();
+    aabbTrees.clear();
     transMatrices.clear();
 }
 
@@ -130,6 +139,8 @@ int scene::read_scene_file(std::string fileName) {
         return -1;
     }
 
+    qDebug() << "Read obj file over.";
+
     for (auto o : objects) {
         QMatrix4x4 trans = transMatrices[o];
         std::vector<vertex*> vertices = o->get_vertices();
@@ -140,5 +151,38 @@ int scene::read_scene_file(std::string fileName) {
         }
     }
 
+    qDebug() << "Calculate transform over.";
+
+    build_aabb_trees();
+
     return 0;
+}
+
+void scene::build_aabb_trees() {
+    for (auto o : objects) {
+        TreeandTri *t = new TreeandTri;
+
+        t->triangles.resize(o->get_faces().size());
+        std::vector<face*> fs = o->get_faces();
+        for (auto f : fs) {
+            Point p1, p2, p3;
+            vertex* v1 = f->pEdge->pVertex,
+                *v2 = f->pEdge->pNext->pVertex,
+                *v3 = f->pEdge->pNext->pNext->pVertex;
+            p1 = Point(v1->position.x, v1->position.y, v1->position.z);
+            p2 = Point(v2->position.x, v2->position.y, v2->position.z);
+            p3 = Point(v3->position.x, v3->position.y, v3->position.z);
+            Triangle tri(p1, p2, p3);
+            t->triangles.push_back(tri);
+        }
+
+        
+        t->tree.rebuild(t->triangles.begin(), t->triangles.end());
+        t->tree.accelerate_distance_queries();
+
+        aabbTrees.push_back(t);
+
+        qDebug() << "Build object aabb tree over.";
+    }
+
 }

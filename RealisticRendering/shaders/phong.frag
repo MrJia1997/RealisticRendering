@@ -18,7 +18,10 @@ uniform MaterialInfo material;
 
 in vec3 eyeNorm;
 in vec4 eyePosition;
+in vec2 texC;
 out vec4 fColor;
+
+uniform sampler2D texUnit;
 
 vec3 phongModel(vec4 pos, vec3 norm) {
   vec3 s = normalize(vec3(light.Position - pos));
@@ -32,15 +35,19 @@ vec3 phongModel(vec4 pos, vec3 norm) {
   if (sDotN > 0.0)
     spec = light.Ls * material.Ks * pow(max(dot(h,norm), 0.0), material.Shininess);
 
-  return ambient + diffuse + spec;
+  vec3 texColor = vec3(texture2D(texUnit, texC));
+  vec3 diffColor = diffuse * texColor;
+  vec3 ambColor = ambient * texColor;
+  return ambColor + diffColor + spec;
 }
 
 void main()
 {
-   if (gl_FrontFacing) {
-      fColor = vec4(phongModel(eyePosition, eyeNorm), 1.0);
-   }
-   else {
-      fColor = vec4(phongModel(eyePosition, -eyeNorm), 1.0);
-   }
+  if (gl_FrontFacing) {
+    fColor = vec4(phongModel(eyePosition, eyeNorm), 1.0);
+  }
+  else {
+    fColor = vec4(phongModel(eyePosition, -eyeNorm), 1.0);
+  }
+
 }

@@ -5,6 +5,8 @@ RenderingWidget::RenderingWidget(QWidget *parent)
     : QOpenGLWidget(parent), 
     pScene(nullptr),
     mProgram(nullptr),
+    mTexture(nullptr),
+    mDisplacement(nullptr),
     projType(PERSPECTIVE),
     orthoRange(1.5f),
     drawArraySize(0) {
@@ -50,36 +52,45 @@ void RenderingWidget::read_scene_file(QString fileName) {
 void RenderingWidget::initializeGL() {
     initializeOpenGLFunctions();
     connect(this, &QOpenGLWidget::frameSwapped, this, &RenderingWidget::update);
-    
+
     glClearColor(0.5, 0.5, 0.5, 0.0);
-    glEnable(GL_CULL_FACE);
-    
     glClearDepth(1);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_TEXTURE_2D);
+
     
     glEnable(GL_DOUBLEBUFFER);
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_POLYGON_SMOOTH);
+
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-    
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+
     setupShaderProgram("shaders/phong.vert", "shaders/phong.frag");
     setupBuffer();
     setupVAO();
     
     mProgram->setAttributeBuffer(0, GL_FLOAT, offsetof(vertex, position), 3, sizeof(vertex));
     mProgram->setAttributeBuffer(1, GL_FLOAT, offsetof(vertex, normal), 3, sizeof(vertex));
-    mProgram->setAttributeBuffer(2, GL_FLOAT, offsetof(vertex, color), 4, sizeof(vertex));
+    mProgram->setAttributeBuffer(2, GL_FLOAT, offsetof(vertex, texCoord), 3, sizeof(vertex));
     mProgram->enableAttributeArray(0);
     mProgram->enableAttributeArray(1);
     mProgram->enableAttributeArray(2);
+
+    // Load Texture
+    load_texture();
 
     // Release (unbind) all
     mObject.release();
     mVertex.release();
     mProgram->release();
+
 }
 
 void RenderingWidget::resizeGL(int w, int h) {
@@ -101,20 +112,22 @@ void RenderingWidget::paintGL() {
     glShadeModel(GL_SMOOTH);
 
     mProgram->bind();
+    mTexture->bind(0);
+    mDisplacement->bind(1);
 
     mProgram->setUniformValue("viewMat", mCamera.toMatrix());
     mProgram->setUniformValue("projection", mProjection);
     mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
      
-    QVector4D worldLight(5.0f, 5.0f, 2.0f, 1.0f);
-    mProgram->setUniformValue("material.Kd", 0.9f, 0.5f, 0.3f);
+    QVector4D worldLight(0.0f, 5.0f, 2.0f, 1.0f);
+    mProgram->setUniformValue("material.Kd", 0.5f, 0.5f, 0.5f);
     mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
     mProgram->setUniformValue("light.Position", mCamera.toMatrix() * worldLight);
-    mProgram->setUniformValue("material.Ka", 0.9f, 0.5f, 0.3f);
+    mProgram->setUniformValue("material.Ka", 0.5f, 0.5f, 0.5f);
     mProgram->setUniformValue("light.La", 0.4f, 0.4f, 0.4f);
     mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
     mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
-    mProgram->setUniformValue("material.Shininess", 100.0f);
+    mProgram->setUniformValue("material.Shininess", 60.0f);
 
     {
         mObject.bind();
@@ -122,6 +135,8 @@ void RenderingWidget::paintGL() {
         glDrawArrays(GL_TRIANGLES, 0, drawArraySize);
         mObject.release();
     }
+    
+    mTexture->release();
     mProgram->release();
 }
 
@@ -154,6 +169,28 @@ void RenderingWidget::setupVAO() {
     mObject.bind();
 }
 
+void RenderingWidget::load_texture() {
+    if (mTexture != nullptr)
+        delete mTexture;
+
+    if (mDisplacement != nullptr)
+        delete mDisplacement;
+
+    mTexture = new QOpenGLTexture(QImage("texture/rock/Rock_COLOR.jpg").mirrored());
+    mTexture->setMinificationFilter(QOpenGLTexture::Linear);
+    mTexture->setMagnificationFilter(QOpenGLTexture::Linear);
+    mTexture->setWrapMode(QOpenGLTexture::Repeat);
+    glActiveTexture(GL_TEXTURE0);
+    mProgram->setUniformValue("texUnit", 0);
+
+    mDisplacement = new QOpenGLTexture(QImage("texture/rock/Rock_DISPLACEMENT.png").mirrored());
+    mDisplacement->setMinificationFilter(QOpenGLTexture::Linear);
+    mDisplacement->setMagnificationFilter(QOpenGLTexture::Linear);
+    mDisplacement->setWrapMode(QOpenGLTexture::Repeat);
+    glActiveTexture(GL_TEXTURE1);
+    mProgram->setUniformValue("dispUnit", 1);
+}
+
 
 void RenderingWidget::update() {
     // Update input
@@ -163,7 +200,7 @@ void RenderingWidget::update() {
     static const float transSpeed = 0.2f;
     static const float rotSpeed = 0.2f;
     
-    if (Input::buttonPressed(Qt::RightButton))
+    if (Input::buttonPressed(Qt::LeftButton))
     {
         // Handle rotations
         mCamera.rotate(-rotSpeed * Input::mouseDelta().x(), Camera3D::LocalUp);
@@ -196,8 +233,30 @@ void RenderingWidget::update() {
     {
         translation -= mCamera.forward();
     }
-    mCamera.translate(transSpeed * translation);
 
+    if (translation != QVector3D(0.0, 0.0, 0.0)) {
+        Camera3D tempCam = mCamera;
+        tempCam.translate(transSpeed * translation);
+        
+        Point outside(0.0, 0.0, 1000.0);
+        QMatrix4x4 camCoord = tempCam.toMatrix().inverted();
+        Point cam(camCoord(0, 3), camCoord(1, 3), camCoord(2, 3));
+        
+        bool isColliding = false;
+
+        for (auto t : pScene->aabbTrees) {
+            double distance = t->tree.squared_distance(cam);
+            if (distance <= 0.3)
+                isColliding = true;
+        }
+        
+        
+        if (!isColliding) {
+            mCamera = tempCam;
+        }
+    }
+        
+    //mCamera.translate(transSpeed * translation);
     //mTransform.rotate(1.0f, QVector3D(0.4f, 0.3f, 0.3f));
 
     QOpenGLWidget::update();

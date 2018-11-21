@@ -28,7 +28,13 @@ void RealisticRendering::initOptions() {
     connect(ui.orthographic, &QRadioButton::clicked, this, [&]() {
         render.set_proj_type(ORTHOGRAPHIC);
     });
-
+    connect(ui.openTexture, &QPushButton::clicked, this, [&]() {
+        QString fileName = QFileDialog::getOpenFileName(this,
+            tr("Open texture file"),
+            QDir::homePath(),
+            tr("Image File (*.jpg *.png *.bmp)"));
+        //render.load_2D_texture(fileName);
+    });
 }
 
 void RealisticRendering::initActions() {

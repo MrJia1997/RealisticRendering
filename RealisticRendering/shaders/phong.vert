@@ -1,9 +1,13 @@
-#version 330
+#version 440
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
-layout(location = 2) in vec4 color;
+layout(location = 2) in vec3 texCoord;
+
 out vec3 eyeNorm;
 out vec4 eyePosition;
+out vec2 texC;
+
+uniform sampler2D dispUnit;
 
 uniform mat4 modelMat;
 uniform mat4 viewMat;
@@ -18,6 +22,9 @@ void getEyeSpace (out vec3 norm, out vec4 pos) {
 void main()
 {
   getEyeSpace(eyeNorm, eyePosition);
-  
-  gl_Position = projection * viewMat * modelMat * vec4(position, 1.0);
+  texC = vec2(texCoord);
+  vec4 disp = texture(dispUnit, texC);
+  disp = normalize(disp * 2.0 - 1.0);
+  vec4 pos = vec4(position, 1.0) + 0.05 * disp;
+  gl_Position = projection * viewMat * modelMat * pos;
 }

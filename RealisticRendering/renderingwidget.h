@@ -10,6 +10,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 
 #include <QEvent>
 #include <QKeyEvent>
@@ -53,6 +54,7 @@ protected slots:
 
 public slots:
     void set_proj_type(int type);
+    void load_texture();
 
 private:
     scene *pScene;
@@ -62,6 +64,10 @@ private:
     QOpenGLBuffer mVertex;
     QOpenGLVertexArrayObject mObject;
     QOpenGLShaderProgram *mProgram;
+    
+    QOpenGLTexture *mTexture;
+    QOpenGLTexture *mDisplacement;
+
 
     int projType;
     float orthoRange;
