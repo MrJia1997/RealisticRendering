@@ -7,12 +7,14 @@ RenderingWidget::RenderingWidget(QWidget *parent)
     mProgram(nullptr),
     mTexture(nullptr),
     mDisplacement(nullptr),
+    //mFBO(nullptr),
     projType(PERSPECTIVE),
     orthoRange(1.5f),
     drawArraySize(0) {
     
     this->grabKeyboard();
 
+    lightPosition = QVector4D(0.0f, 3.0f, 0.0f, 1.0f);
     mCamera.translate(0.0f, 0.0f, 5.0f);
 }
 
@@ -39,7 +41,6 @@ void RenderingWidget::read_scene_file(QString fileName) {
 
     // Update Buffer
     mVertex.bind();
-    mVertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
     mVertex.allocate(&rawData[0], rawData.size() * sizeof(vertex));
     drawArraySize = rawData.size();
     mObject.bind();
@@ -47,6 +48,14 @@ void RenderingWidget::read_scene_file(QString fileName) {
     // Release all
     mObject.release();
     mVertex.release();
+
+    mVertexShadow.bind();
+    mVertexShadow.allocate(&rawData[0], rawData.size() * sizeof(vertex));
+    mObjectShadow.bind();
+
+    mObjectShadow.release();
+    mVertexShadow.release();
+
 }
 
 void RenderingWidget::initializeGL() {
@@ -71,10 +80,13 @@ void RenderingWidget::initializeGL() {
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-
+    // Create common shader
     setupShaderProgram("shaders/phong.vert", "shaders/phong.frag");
-    setupBuffer();
-    setupVAO();
+    mVertex.create();
+    mVertex.bind();
+    mVertex.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    mObject.create();
+    mObject.bind();
     
     mProgram->setAttributeBuffer(0, GL_FLOAT, offsetof(vertex, position), 3, sizeof(vertex));
     mProgram->setAttributeBuffer(1, GL_FLOAT, offsetof(vertex, normal), 3, sizeof(vertex));
@@ -92,6 +104,22 @@ void RenderingWidget::initializeGL() {
     mVertex.release();
     mProgram->release();
 
+    // Create shadow
+    setupShadowProgram("shaders/depth.vert", "shaders/depth.frag");
+    mVertexShadow.create();
+    mVertexShadow.bind();
+    mVertexShadow.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    mObjectShadow.create();
+    mObjectShadow.bind();
+
+    mShadow->setAttributeBuffer(0, GL_FLOAT, offsetof(vertex, position), 3, sizeof(vertex));
+    mShadow->enableAttributeArray(0);
+
+    load_FBO();
+
+    mObjectShadow.release();
+    mVertexShadow.release();
+    mShadow->release();
 }
 
 void RenderingWidget::resizeGL(int w, int h) {
@@ -109,36 +137,8 @@ void RenderingWidget::resizeGL(int w, int h) {
 }
 
 void RenderingWidget::paintGL() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glShadeModel(GL_SMOOTH);
-
-    mProgram->bind();
-    mTexture->bind(0);
-    mDisplacement->bind(1);
-
-    mProgram->setUniformValue("viewMat", mCamera.toMatrix());
-    mProgram->setUniformValue("projection", mProjection);
-    mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
-     
-    QVector4D worldLight(0.0f, 3.0f, 0.0f, 1.0f);
-    mProgram->setUniformValue("material.Kd", 0.5f, 0.5f, 0.5f);
-    mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
-    mProgram->setUniformValue("light.Position", mCamera.toMatrix() * worldLight);
-    mProgram->setUniformValue("material.Ka", 0.5f, 0.5f, 0.5f);
-    mProgram->setUniformValue("light.La", 0.7f, 0.7f, 0.7f);
-    mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
-    mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
-    mProgram->setUniformValue("material.Shininess", 60.0f);
-
-    {
-        mObject.bind();
-        mProgram->setUniformValue("modelMat", mTransform.toMatrix());
-        glDrawArrays(GL_TRIANGLES, 0, drawArraySize);
-        mObject.release();
-    }
-    
-    mTexture->release();
-    mProgram->release();
+    renderShadow();
+    renderObject();
 }
 
 void RenderingWidget::teardownGL() {
@@ -154,20 +154,106 @@ void RenderingWidget::setupShaderProgram(const char *vertFile, const char *fragF
     mProgram->addShaderFromSourceFile(QOpenGLShader::Vertex, vertFile);
     mProgram->addShaderFromSourceFile(QOpenGLShader::Fragment, fragFile);
     mProgram->link();
+}
+
+void RenderingWidget::setupShadowProgram(const char * vertFile, const char * fragFile) {
+    // Create Shader (Do not release until VAO is created)
+    mShadow = new QOpenGLShaderProgram();
+    mShadow->addShaderFromSourceFile(QOpenGLShader::Vertex, vertFile);
+    mShadow->addShaderFromSourceFile(QOpenGLShader::Fragment, fragFile);
+    mShadow->link();
+}
+
+void RenderingWidget::renderShadow() {
+    QMatrix4x4 lightViewMat;
+    lightViewMat.setToIdentity();
+    lightViewMat.lookAt(lightPosition.toVector3D(),
+        QVector3D(0, 0, 0),
+        QVector3D(0, 1, 0));
     
+    QMatrix4x4 projMat;
+    int w = this->width(), h = this->height();
+    projMat.setToIdentity();
+    float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    projMat.perspective(90.0f, aspectRatio, 0.1f, 1000.0f);
+    
+    QMatrix4x4 lightViewProjMat = projMat * lightViewMat;
+
+    //mFBO->bind();
+    glViewport(0, 0, 1024, 1024);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, shadowFramebuffer);
+    glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glShadeModel(GL_SMOOTH);
+    //glCullFace(GL_FRONT);
+    mShadow->bind();
+    mVertexShadow.bind();
+
+    mShadow->setUniformValue("lightViewProjMat", lightViewProjMat);
+    mShadow->setUniformValue("modelMat", mTransform.toMatrix());
+
+    mObjectShadow.bind();
+    glDrawArrays(GL_TRIANGLES, 0, drawArraySize);
+    mObjectShadow.release();
+
+    mVertexShadow.release();
+    mShadow->release();
+    //glCullFace(GL_BACK);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glViewport(0, 0, w, h);
 }
 
-void RenderingWidget::setupBuffer() {
-    // Create Buffer (Do not release until VAO is created)
-    mVertex.create();
+void RenderingWidget::renderObject() {
+    QMatrix4x4 lightViewMat;
+    lightViewMat.setToIdentity();
+    lightViewMat.lookAt(lightPosition.toVector3D(),
+        QVector3D(0, 0, 0),
+        QVector3D(0, 1, 0));
+
+    QMatrix4x4 projMat;
+    int w = this->width(), h = this->height();
+    projMat.setToIdentity();
+    float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+    projMat.perspective(90.0f, aspectRatio, 0.1f, 1000.0f);
+
+    QMatrix4x4 lightViewProjMat = projMat * lightViewMat;
+    
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glShadeModel(GL_SMOOTH);
+
+    mProgram->bind();
     mVertex.bind();
-    mVertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
-}
+    mTexture->bind(0);
+    mDisplacement->bind(1);
+    
+    glBindTexture(GL_TEXTURE_2D, shadowMap);
+    glActiveTexture(GL_TEXTURE2);
+    mProgram->setUniformValue("shadowUnit", 2);
 
-void RenderingWidget::setupVAO() {
-    // Create Vertex Array Object
-    mObject.create();
+    mProgram->setUniformValue("viewMat", mCamera.toMatrix());
+    mProgram->setUniformValue("projection", mProjection);
+    mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
+    mProgram->setUniformValue("lightViewProjMat", lightViewProjMat);
+
+    mProgram->setUniformValue("material.Kd", 0.5f, 0.5f, 0.5f);
+    mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
+    mProgram->setUniformValue("light.Position", mCamera.toMatrix() * lightPosition);
+    mProgram->setUniformValue("material.Ka", 0.5f, 0.5f, 0.5f);
+    mProgram->setUniformValue("light.La", 0.7f, 0.7f, 0.7f);
+    mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
+    mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
+    mProgram->setUniformValue("material.Shininess", 60.0f);
+
     mObject.bind();
+    mProgram->setUniformValue("modelMat", mTransform.toMatrix());
+    glDrawArrays(GL_TRIANGLES, 0, drawArraySize);
+    mObject.release();
+
+    mTexture->release();
+    mDisplacement->release();
+    mVertex.release();
+    mProgram->release();
 }
 
 void RenderingWidget::load_texture(QString fileName) {
@@ -194,6 +280,41 @@ void RenderingWidget::load_displacement(QString fileName) {
     mProgram->setUniformValue("dispUnit", 1);
 }
 
+void RenderingWidget::load_FBO() {
+    /*if (mFBO != nullptr)
+        delete mFBO;
+
+    mFBO = new QOpenGLFramebufferObject(1024, 1024, 
+        QOpenGLFramebufferObject::Depth);
+    */
+
+    glGenTextures(1, &shadowMap);
+    glBindTexture(GL_TEXTURE_2D, shadowMap);
+    glActiveTexture(GL_TEXTURE2);
+    mProgram->setUniformValue("shadowUnit", 2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, 1024, 1024,
+        0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    // GL_CLAMP_TO_EDGE setups the shadow map in such a way that
+    // fragments for which the shadow map is undefined
+    // will get values from closest edges of the shadow map
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // comparison mode of the shadow map
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+    glGenFramebuffers(1, &shadowFramebuffer);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, shadowFramebuffer);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        GL_TEXTURE_2D, shadowMap, 0);
+
+    glDrawBuffer(GL_NONE);
+
+}
 
 void RenderingWidget::update() {
     // Update input

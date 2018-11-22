@@ -18,12 +18,38 @@ uniform MaterialInfo material;
 
 in vec3 eyeNorm;
 in vec4 eyePosition;
+in vec4 shadowCoord;
 in vec2 texC;
-out vec4 fColor;
 
 uniform sampler2D texUnit;
+uniform sampler2D shadowUnit;
 
-vec3 phongModel(vec4 pos, vec3 norm) {
+float unpack(vec4 colour) {
+  const vec4 bitShifts = vec4(1.0 / (256.0 * 256.0 * 256.0),
+                              1.0 / (256.0 * 256.0),
+                              1.0 / 256.0,
+                              1);
+  return dot(colour , bitShifts);
+}
+
+float shadowSimple() {
+  vec4 shadowMapPosition = shadowCoord / shadowCoord.w;
+
+  shadowMapPosition = (shadowMapPosition + 1.0) /2.0;
+
+  vec4 packedZValue = texture2D(shadowUnit, shadowMapPosition.st);
+
+  float distanceFromLight = unpack(packedZValue);
+
+  //add bias to reduce shadow acne (error margin)
+  float bias = 0.0005;
+
+  //1.0 = not in shadow (fragment is closer to light than the value stored in shadow map)
+  //0.0 = in shadow
+  return float(distanceFromLight > shadowMapPosition.z - bias);
+}
+
+vec3 phongModel(vec4 pos, vec3 norm, vec4 shadowC) {
   vec3 s = normalize(vec3(light.Position - pos));
   vec3 v = normalize(-pos.xyz);
   vec3 r = reflect(-s, norm);
@@ -38,16 +64,16 @@ vec3 phongModel(vec4 pos, vec3 norm) {
   vec3 texColor = vec3(texture2D(texUnit, texC));
   vec3 diffColor = diffuse * texColor;
   vec3 ambColor = ambient * texColor;
-  return ambColor + diffColor + spec;
+  
+  float shadow = 1.0;
+  if (shadowC.w > 0.0) {
+    shadow = shadowSimple();
+    shadow = shadow * 0.8 + 0.2;
+  }
+  
+  return shadow * (ambColor + diffColor + spec);
 }
 
-void main()
-{
-  if (gl_FrontFacing) {
-    fColor = vec4(phongModel(eyePosition, eyeNorm), 1.0);
-  }
-  else {
-    fColor = vec4(phongModel(eyePosition, -eyeNorm), 1.0);
-  }
-
+void main() {
+  gl_FragColor = vec4(phongModel(eyePosition, eyeNorm, shadowCoord), 1.0);
 }

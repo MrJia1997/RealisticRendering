@@ -11,6 +11,7 @@
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
+#include <QOpenGLFrameBufferObject>
 
 #include <QEvent>
 #include <QKeyEvent>
@@ -41,8 +42,10 @@ protected:
     void teardownGL();
     
     void setupShaderProgram(const char *vertFile, const char *fragFile);
-    void setupBuffer();
-    void setupVAO();
+    void setupShadowProgram(const char *vertFile, const char *fragFile);
+
+    void renderShadow();
+    void renderObject();
 
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
@@ -56,6 +59,7 @@ public slots:
     void set_proj_type(int type);
     void load_texture(QString fileName);
     void load_displacement(QString fileName);
+    void load_FBO();
 
 private:
     scene *pScene;
@@ -65,14 +69,22 @@ private:
     QOpenGLBuffer mVertex;
     QOpenGLVertexArrayObject mObject;
     QOpenGLShaderProgram *mProgram;
+
+    QOpenGLBuffer mVertexShadow;
+    QOpenGLVertexArrayObject mObjectShadow;
+    QOpenGLShaderProgram *mShadow;
     
     QOpenGLTexture *mTexture;
     QOpenGLTexture *mDisplacement;
-
+    
+    //QOpenGLFramebufferObject *mFBO;
+    GLuint shadowMap;
+    GLuint shadowFramebuffer;
 
     int projType;
     float orthoRange;
 
+    QVector4D lightPosition;
     QMatrix4x4 mProjection;
     Camera3D mCamera;
     Transform3D mTransform;

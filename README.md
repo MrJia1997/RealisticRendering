@@ -25,12 +25,9 @@ Qt 5.11.2: https://www.qt.io/
 
 Trimesh2: https://gfx.cs.princeton.edu/proj/trimesh2/
 
+CGAL 4.12: https://www.cgal.org/
+
 Trent Reed's Tutorial of Qt5 w/ OpenGL: http://www.trentreed.net/topics/opengl/
 
 懂deeee珍惜's Tutorial of Qt5 w/ OpenGL:https://blog.csdn.net/chaojiwudixiaofeixia?t=1
 
-CGAL 4.12: https://www.cgal.org/
-
-
-
- 
