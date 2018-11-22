@@ -15,6 +15,8 @@ object::object() {
     xmin = ymin = zmin = -1.f;
 
     numParts = 0;
+
+    material = Material();
 }
 
 object::~object() {

@@ -35,6 +35,10 @@ void RealisticRendering::initOptions() {
             tr("Image File (*.jpg *.png *.bmp)"));
         render.load_texture(fileName);
     });
+    connect(ui.rayTracing, &QPushButton::clicked, this, [&]() {
+        Light l;
+        render.renderObjectRayTracing(l);
+    });
 }
 
 void RealisticRendering::initActions() {

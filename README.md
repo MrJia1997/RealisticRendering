@@ -31,3 +31,5 @@ Trent Reed's Tutorial of Qt5 w/ OpenGL: http://www.trentreed.net/topics/opengl/
 
 懂deeee珍惜's Tutorial of Qt5 w/ OpenGL:https://blog.csdn.net/chaojiwudixiaofeixia?t=1
 
+Scratchapixel 2.0: https://www.scratchapixel.com
+

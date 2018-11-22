@@ -53,7 +53,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="rayTracing">
+              <widget class="QPushButton" name="rayTracing">
                <property name="text">
                 <string>Ray Tracing</string>
                </property>

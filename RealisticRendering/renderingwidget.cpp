@@ -16,6 +16,8 @@ RenderingWidget::RenderingWidget(QWidget *parent)
 
     lightPosition = QVector4D(0.0f, 3.0f, 0.0f, 1.0f);
     mCamera.translate(0.0f, 0.0f, 5.0f);
+
+    
 }
 
 RenderingWidget::~RenderingWidget() {
@@ -56,13 +58,20 @@ void RenderingWidget::read_scene_file(QString fileName) {
     mObjectShadow.release();
     mVertexShadow.release();
 
+    for (int i = 0; i < pScene->objects.size(); i++) {
+        if (i < pScene->objects.size() - 1)
+            pScene->objects[i]->material.Type = REFLECTION_AND_REFRACTION;
+        else
+            pScene->objects[i]->material.Type = DIFFUSE_AND_GLOSSY;
+        
+    }
 }
 
 void RenderingWidget::initializeGL() {
     initializeOpenGLFunctions();
     connect(this, &QOpenGLWidget::frameSwapped, this, &RenderingWidget::update);
 
-    glClearColor(0.5, 0.5, 0.5, 0.0);
+    glClearColor(0, 0, 0, 0.0);
     glClearDepth(1);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -236,14 +245,14 @@ void RenderingWidget::renderObject() {
     mProgram->setUniformValue("normalMat", mTransform.toMatrix().normalMatrix());
     mProgram->setUniformValue("lightViewProjMat", lightViewProjMat);
 
-    mProgram->setUniformValue("material.Kd", 0.5f, 0.5f, 0.5f);
+    mProgram->setUniformValue("material.Kd", 0.8f, 0.8f, 0.8f);
     mProgram->setUniformValue("light.Ld", 1.0f, 1.0f, 1.0f);
     mProgram->setUniformValue("light.Position", mCamera.toMatrix() * lightPosition);
     mProgram->setUniformValue("material.Ka", 0.5f, 0.5f, 0.5f);
     mProgram->setUniformValue("light.La", 0.7f, 0.7f, 0.7f);
-    mProgram->setUniformValue("material.Ks", 0.8f, 0.8f, 0.8f);
+    mProgram->setUniformValue("material.Ks", 0.4f, 0.4f, 0.4f);
     mProgram->setUniformValue("light.Ls", 1.0f, 1.0f, 1.0f);
-    mProgram->setUniformValue("material.Shininess", 60.0f);
+    mProgram->setUniformValue("material.Shininess", 50.0f);
 
     mObject.bind();
     mProgram->setUniformValue("modelMat", mTransform.toMatrix());
@@ -254,6 +263,265 @@ void RenderingWidget::renderObject() {
     mDisplacement->release();
     mVertex.release();
     mProgram->release();
+}
+
+Vector normalize(Vector v) {
+    float mag2 = v.x() * v.x() + v.y() * v.y() + v.z() * v.z();
+    if (mag2 > 0) {
+        float invMag = 1 / sqrtf(mag2);
+        return Vector(v.x() * invMag, v.y() * invMag, v.z() * invMag);
+    }
+    return v;
+};
+
+#define MAX_RAY_TRACING_DEPTH 5
+QColor RenderingWidget::trace(const Ray ray, int depth, Light light) {
+    if (depth > MAX_RAY_TRACING_DEPTH)
+        return Qt::black;
+    
+    if (pScene == nullptr)
+        return Qt::black;
+
+    if (ray.is_degenerate())
+        return Qt::black;
+
+    QColor result;
+
+    float minDist = 1e10;
+    
+    object *hitObject = nullptr;
+    TreeandTri *hitT;
+    Point hitCoord;
+    Vector hitNormal;
+    int hitFaceId = -1;
+    
+    Point rayStart = ray.start();
+    Vector rayDir = normalize(ray.to_vector());
+
+    auto squareDistance = [](Point a, Point b) {
+        return (a.x() - b.x()) * (a.x() - b.x())
+            + (a.y() - b.y()) * (a.y() - b.y())
+            + (a.z() - b.z()) * (a.z() - b.z());
+    };
+
+    for (int i = 0; i < pScene->aabbTrees.size(); i++) {
+        auto t = pScene->aabbTrees[i];
+        if (t->tree.do_intersect(ray)) {
+            Ray_intersection intersec = t->tree.first_intersection(ray);
+            Point *pointIntersec = boost::get<Point>(&(intersec->first));
+            int faceId = std::distance(t->triangles.begin(), intersec->second);
+            float dist = squareDistance(rayStart, *pointIntersec);
+            if (dist < minDist) {
+                minDist = dist;
+                hitT = t;
+                hitCoord = *(pointIntersec);
+                hitFaceId = faceId;
+                hitObject = pScene->objects[i];
+            }
+        }
+    }
+
+    // No intersection
+    if (hitFaceId == -1) {
+        return Qt::black;
+    }
+
+    auto calcNormal = [] (Triangle t) {
+        Vector v2v1(t[1], t[0]), v2v3(t[1], t[2]);
+        Vector result = CGAL::cross_product(v2v3, v2v1);
+        return CGAL::cross_product(v2v3, v2v1);
+    };
+
+    hitNormal = normalize(calcNormal(hitT->triangles[hitFaceId]));
+    
+    float bias = 1e-4;
+    
+    auto reflect = [](Vector I, Vector N) {
+        return I - 2 * (I * N) * N;
+    };
+    auto clamp = [](float lo, float hi, float n) {
+        return std::max(lo, std::min(hi, n));
+    };
+    auto refract = [&](Vector I, Vector N, float ior) {
+        float cosi = clamp(-1, 1, (I * N));
+        float etai = 1, etat = ior;
+        Vector n = N;
+        if (cosi < 0) { 
+            cosi = -cosi; 
+        }
+        else { 
+            std::swap(etai, etat); 
+            n = -N; 
+        }
+        
+        float eta = etai / etat;
+        float k = 1 - eta * eta * (1 - cosi * cosi);
+        
+        if (k < 0) {
+            return Vector(0, 0, 0);
+        }
+        else {
+            return eta * I + (eta * cosi - sqrtf(k)) * n;
+        }
+       
+    };
+    auto fresnel = [&] (Vector I, Vector N, const float &ior, float &kr)
+    {
+        float cosi = clamp(-1, 1, (I * N));
+        float etai = 1, etat = ior;
+        if (cosi > 0) { std::swap(etai, etat); }
+        // Compute sini using Snell's law
+        float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
+        // Total internal reflection
+        if (sint >= 1) {
+            kr = 1;
+        }
+        else {
+            float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+            cosi = fabsf(cosi);
+            float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
+            float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+            kr = (Rs * Rs + Rp * Rp) / 2;
+        }
+        // As a consequence of the conservation of energy, transmittance is given by:
+        // kt = 1 - kr;
+    };
+
+    switch (hitObject->material.Type) {
+    case REFLECTION_AND_REFRACTION: {
+        Vector reflectDir = normalize(reflect(rayDir, hitNormal));
+        Vector refractDir = normalize(refract(rayDir, hitNormal, hitObject->material.ior));
+        Point reflectCoord = (reflectDir * hitNormal) < 0 ? 
+            hitCoord - hitNormal * bias : 
+            hitCoord + hitNormal * bias;
+        Point refractCoord = (refractDir * hitNormal) < 0 ? 
+            hitCoord - hitNormal * bias :
+            hitCoord + hitNormal * bias;
+        QColor reflectColor = trace(Ray(reflectCoord, reflectDir), depth + 1, light);
+        QColor refractionColor = trace(Ray(refractCoord, refractDir), depth + 1, light);
+        
+        float kr;
+        fresnel(rayDir, hitNormal, hitObject->material.ior, kr);
+        
+        float resultRed = reflectColor.redF() * kr + refractionColor.redF() * (1 - kr);
+        float resultGreen = reflectColor.greenF() * kr + refractionColor.greenF() * (1 - kr);
+        float resultBlue = reflectColor.blueF() * kr + refractionColor.blueF() * (1 - kr);
+        result.setRedF(resultRed);
+        result.setGreenF(resultGreen);
+        result.setBlueF(resultBlue);
+        break;
+    }
+    case REFLECTION: {
+        float kr;
+        fresnel(rayDir, hitNormal, hitObject->material.ior, kr);
+        Vector reflectDir = normalize(reflect(rayDir, hitNormal));
+        Point reflectCoord = (reflectDir * hitNormal) < 0 ?
+            hitCoord - hitNormal * bias :
+            hitCoord + hitNormal * bias;
+        QColor reflectColor = trace(Ray(reflectCoord, reflectDir), depth + 1, light);
+        float resultRed = reflectColor.redF();
+        float resultGreen = reflectColor.greenF();
+        float resultBlue = reflectColor.blueF();
+        result.setRedF(resultRed);
+        result.setGreenF(resultGreen);
+        result.setBlueF(resultBlue);
+        break;
+    }
+    default: {
+        Vector lightAmt(0, 0, 0), specularColor(0, 0, 0);
+        Point shadowCoord = (rayDir * hitNormal) < 0 ?
+            hitCoord + hitNormal * bias :
+            hitCoord - hitNormal * bias;
+        
+        Point lightCoord(light.Position.x(), light.Position.y(), light.Position.z());
+        Vector lightDir = lightCoord - hitCoord;
+        // square of the distance between hitPoint and the light
+        float lightSquareDistance = lightDir * lightDir;
+        lightDir = normalize(lightDir);
+        float LdotN = std::max(0.f, static_cast<float>(lightDir * hitNormal));
+        
+        object *shadowHitObject = nullptr;
+        bool inShadow = false;
+        Ray shadow(shadowCoord, lightDir);
+
+        // is the point in shadow, and is the nearest occluding object closer to the object than the light itself?
+        for (int i = 0; i < pScene->aabbTrees.size(); i++) {
+            auto t = pScene->aabbTrees[i];
+            if (t->tree.do_intersect(shadow)) {
+                Ray_intersection intersec = t->tree.first_intersection(shadow);
+                Point *pointIntersec = boost::get<Point>(&(intersec->first));
+                int faceId = std::distance(t->triangles.begin(), intersec->second);
+                float dist = squareDistance(shadowCoord, *pointIntersec);
+                if (dist < lightSquareDistance) {
+                    inShadow = true;
+                }
+            }
+        }
+        
+        Vector lightIntensity(light.La, light.La, light.La);
+        lightAmt += (1 - inShadow) * lightIntensity * LdotN;
+        Vector reflectDir = normalize(reflect(-lightDir, hitNormal));
+        specularColor += powf(std::max(0.f, static_cast<float>(-(reflectDir * rayDir))), hitObject->material.Shininess) * lightIntensity;
+        
+        
+        Vector diffColor(lightAmt.x() * hitObject->material.diffColor.x(),
+            lightAmt.y() * hitObject->material.diffColor.y(),
+            lightAmt.z() * hitObject->material.diffColor.z());
+        Vector res = diffColor* hitObject->material.Kd + specularColor * hitObject->material.Ks;
+        
+        result.setRedF(res.x());
+        result.setGreenF(res.y());
+        result.setBlueF(res.z());
+        break;
+    }
+    }
+    return result;
+}
+
+void RenderingWidget::renderObjectRayTracing(Light light) {
+    int imageWidth = this->width(), imageHeight = this->height();
+    QImage result(imageWidth, imageHeight, QImage::Format_ARGB32);
+
+    Camera3D camera = mCamera;
+    float fovVertical = 135.f;
+
+    auto calcPrimaryRay = [&](int x, int y) {
+        // (0, 0) is left top
+        float nearPlane = 0.1f;
+        QMatrix4x4 camMat = camera.toMatrix().inverted();
+        QVector3D cam(camMat(0, 3), camMat(1, 3), camMat(2, 3));
+        
+        QVector3D camForward = camera.forward();
+        camForward.normalize();
+        camForward *= nearPlane;
+        QVector3D camRight = camera.right(), camUp = camera.up();
+        camRight.normalize();
+        camUp.normalize();
+        float pixelSize = (2 * nearPlane * tan(fovVertical / 360) / imageHeight);
+        camRight *= pixelSize;
+        camUp *= pixelSize;
+
+        int centerX = imageWidth / 2, centerY = imageHeight / 2;
+
+        camRight *= (x - centerX);
+        camUp *= (centerY - y);
+
+        QVector3D pixel = cam + camForward + camRight + camUp;
+        
+        Point camP(cam.x(), cam.y(), cam.z());
+        Point pixelP(pixel.x(), pixel.y(), pixel.z());
+        
+        return Ray(camP, pixelP);
+    };
+
+    for (int x = 0; x < imageWidth; x++) {
+        for (int y = 0; y < imageHeight; y++) {
+            Ray prim = calcPrimaryRay(x, y);
+            result.setPixelColor(x, y, trace(prim, 0, light));
+        }
+    }
+
+    result.save("rt.jpg", "JPG");
 }
 
 void RenderingWidget::load_texture(QString fileName) {

@@ -24,6 +24,24 @@ enum {
     PERSPECTIVE
 };
 
+enum {
+    POINT_LIGHT,
+    DIRECTIONAL_LIGHT
+};
+
+struct Light {
+    float La;       // Ambient light intensity
+    float Ld;       // Diffuse light intensity
+    float Ls;       // Specular light intensity
+    QVector3D Position;
+    QVector3D Direction;
+    int Type;           // Point or directional light
+
+    Light() : La(1.0), Ld(1.0), Ls(1.0), 
+        Position(QVector3D(0.0, 3.0, 0.0)), Type(POINT_LIGHT)  {}
+};
+
+
 class RenderingWidget : public QOpenGLWidget, 
     protected QOpenGLFunctions {
 
@@ -60,6 +78,9 @@ public slots:
     void load_texture(QString fileName);
     void load_displacement(QString fileName);
     void load_FBO();
+
+    QColor trace(Ray ray, int depth, Light light);
+    void renderObjectRayTracing(Light light);
 
 private:
     scene *pScene;

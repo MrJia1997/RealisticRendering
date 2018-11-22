@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <QVector3D>
 #include "Vec.h"
 
 
@@ -108,7 +109,29 @@ public:
     void set_color(const vec4f& c) { color = c; }
 };
 
+enum {
+    DIFFUSE_AND_GLOSSY,
+    REFLECTION_AND_REFRACTION,
+    REFLECTION
+};
+
+struct Material {
+    float Kd;           // Diffuse reflectivity
+    float Ks;           // Specular reflectivity
+    float Shininess;        // Specular shininess factor
+    float ior;
+    int Type;
+    QVector3D diffColor;
+
+    Material() : ior(1.3), Kd(0.8), Ks(0.4), Shininess(50.f)
+        , Type(DIFFUSE_AND_GLOSSY), diffColor(QVector3D(0.7, 0.3, 0.2)) {}
+};
+
+
 class object {
+public:
+    Material material;
+
 private:
     std::vector<vertex*>    vertices;
     std::vector<half_edge*> halfEdges;

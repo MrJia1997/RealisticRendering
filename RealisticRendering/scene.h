@@ -9,9 +9,11 @@
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include <CGAL/centroid.h>
 
 #include <CGAL/intersections.h>
+#include <CGAL/Polyhedron_3.h>
 #include <CGAL/Bbox_3.h>
 
 typedef CGAL::Simple_cartesian<double> K;
@@ -29,9 +31,10 @@ typedef Traits::Point_and_primitive_id Point_and_Primitive_id;
 typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Primitive_id Primitive_id;
 typedef Tree::Object_and_primitive_id Object_and_Primitive_id;
+typedef boost::optional< Tree::Intersection_and_primitive_id<Ray>::Type > Ray_intersection;
 
 struct TreeandTri {
-    std::vector<K::Triangle_3> triangles;
+    std::vector<Triangle> triangles;
     Tree tree;
 };
 
